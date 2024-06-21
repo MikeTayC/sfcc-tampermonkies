@@ -44,25 +44,6 @@ const SELECTORS = {
 
 const IGNORE_TYPES = ["INPUT", "TEXTAREA", "SELECT"];
 
-const ALLWAYS_ALL = {
-    NEVERALL: [
-        "/on/demandware.store/Sites-Site/default/ViewOrderList_52-Dispatch",
-    ],
-};
-
-const alwaysAll = () => {
-    if (ALLWAYS_ALL.NEVERALL.indexOf(window.location.pathname) === -1) {
-        log("always all:");
-        log(window.location.pathname);
-        document.querySelectorAll("button").forEach((button) => {
-            if (button.innerText === "All") {
-                log(button);
-                button.click();
-            }
-        });
-    }
-};
-
 const log = (logged) => {
     if (ENABLE_CONSOLE) {
         console.log(logged);
@@ -221,6 +202,4 @@ const hotKeyPress = (ev) => {
 (function () {
     "use strict";
     window.addEventListener("keydown", hotKeyPress);
-
-    alwaysAll();
 })();
