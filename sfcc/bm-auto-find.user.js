@@ -3,5 +3,6 @@
     if (coFinderButton) {
         console.log('clicked "#SimpleDiv > table button"');
         coFinderButton.click();
+        
     }
 })();
