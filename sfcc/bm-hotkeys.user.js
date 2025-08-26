@@ -149,6 +149,12 @@ const hotKeyPress = (ev) => {
                         "/on/demandware.store/Sites-Site/default/ViewSystemObjectTypeList-Start"
                     );
                     break;
+                case "KeyE":
+                        redirect(
+                            ev,
+                            "/on/demandware.store/Sites-Site/default/ViewCustomObjectList_52-Dispatch"
+                        );
+                        break;
                 case "KeyQ":
                     var easy = document.querySelector(SELECTORS.DWEASE);
                     var easySearch = document.querySelector(
