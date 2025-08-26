@@ -25,7 +25,8 @@
     const SHOW = [
         'Order Status',
         'AdyenPayments',
-        'Payment and Partials'
+        'Payment and Partials',
+        'PayPal (via Adyen)'
     ]
 
     const SPAN_HIDE = '<span class="hidden-dragon">⛛ </span>'
