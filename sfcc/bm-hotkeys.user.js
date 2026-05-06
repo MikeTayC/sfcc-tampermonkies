@@ -42,7 +42,7 @@ const SELECTORS = {
     DWEASE_SEARCH: "input.dw-search",
 };
 
-const IGNORE_TYPES = ["INPUT", "TEXTAREA", "SELECT"];
+const IGNORE_TYPES = ["INPUT", "TEXTAREA", "SELECT", "BM-LIGHTNING-INPUT", "LIGHTNING-OVERLAY-CONTAINER", "LIGHTNING-INPUT"];
 
 const log = (logged) => {
     if (ENABLE_CONSOLE) {
