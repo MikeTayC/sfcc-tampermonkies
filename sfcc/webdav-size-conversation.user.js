@@ -14,6 +14,22 @@
 (function () {
     "use strict";
 
+    function formatSizeFromKiB(sizeKiB) {
+        const units = ["KiB", "MiB", "GiB", "TiB"];
+        let value = sizeKiB;
+        let unitIndex = 0;
+
+        while (value >= 1024 && unitIndex < units.length - 1) {
+            value /= 1024;
+            unitIndex++;
+        }
+
+        return {
+            value: value.toFixed(2),
+            unit: units[unitIndex]
+        };
+    }
+
     var interval = setInterval(() => {
         var newUI = !!document.querySelector("#dwe-developer-console");
 
@@ -25,7 +41,8 @@
 
         if (bytes && bytes.length) {
             bytes.forEach(function (byte) {
-                if (byte.innerText?.toUpperCase()?.indexOf("MB") === -1) {
+
+                if (!byte.classList.contains("size-converted")) {
                     if (!byte.style.display) {
                         byte.style.display = "grid";
                         byte.style.textAlign = newUI ? "center" : "right";
@@ -34,12 +51,14 @@
                     var firstText = byte.innerText;
                     var size = parseFloat(byte.innerText);
                     if (!isNaN(size)) {
+                        let { value, unit } = formatSizeFromKiB(size);
+
                         byte.innerHTML = `
-                            <tt>${(
-                                size / (size >= 1000000 ? 1000000 : 1000)
-                            ).toFixed(2)} MB</tt>
-                            <tt style="font-size: 10px;">(${size} KB)</tt>
+                            <tt>${value} ${unit}</tt>
+
+                            <tt style="font-size: 10px;">(${size} KiB)</tt>
                         `;
+                        byte.classList.add("size-converted");
                         // byte.firstChild.innerText = `(${size} KB)`;
                         // byte.firstChild.style.fontSize = '10px';
 
