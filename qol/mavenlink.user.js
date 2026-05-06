@@ -4,18 +4,18 @@ const days = ['.day2','.day3','.day4','.day5', '.day6'].values()
 // const days = ['.day2'].values()
 
 var textEvent = document.createEvent('TextEvent');
-    
+
 
 var keyboardEventDown = new KeyboardEvent(
     'keydown',
     {
         key: " ",
         keyCode: 32,
-        code: "Space", 
+        code: "Space",
         which: 32,
         shiftKey: false,
-        ctrlKey: false,  
-        metaKey: false 
+        ctrlKey: false,
+        metaKey: false
     }
 )
 var keyboardEventUp = new KeyboardEvent(
@@ -23,11 +23,11 @@ var keyboardEventUp = new KeyboardEvent(
     {
         key: " ",
         keyCode: 32,
-        code: "Space", 
+        code: "Space",
         which: 32,
         shiftKey: false,
-        ctrlKey: false,  
-        metaKey: false 
+        ctrlKey: false,
+        metaKey: false
     }
 )
 
@@ -41,13 +41,13 @@ async function* fillerup (defaultRow) {
         box?.val((i, v) => v ? v : MY_TIME ).next().trigger('click');
 
         await autofill().then($buttons => $buttons.trigger('click'))
-       
+
         await waitForRemoval('#location')
         yield value;
     }
 }
 
-  
+
 
 const OPEN = ['edit-pencil','edit-box-link'];
 const CLOSED = ['Leave', 'Update', 'Save'];
@@ -60,10 +60,10 @@ const waitForRemoval = (selector) => {
         }
     }, LIMIT);
 
-    return new Promise(resolve => {     
+    return new Promise(resolve => {
         inter = setInterval(() => {
             var $el = jQuery(selector);
-            
+
             if (!$el?.length) {
                 clearInterval(inter);
                 clearTimeout(timeout);
@@ -73,7 +73,7 @@ const waitForRemoval = (selector) => {
     });
 }
 
-const waitFor = (selector, container) => { 
+const waitFor = (selector, container) => {
     var inter;
     var timeout = setTimeout(() => {
         if (inter) {
@@ -81,12 +81,12 @@ const waitFor = (selector, container) => {
         }
     }, LIMIT);
 
-    return new Promise(resolve => {     
+    return new Promise(resolve => {
         inter = setInterval(() => {
-            var $el = container 
+            var $el = container
             ? jQuery(container).find(selector)
             : jQuery(selector);
-            
+
             if ($el?.length) {
                 clearInterval(inter);
                 clearTimeout(timeout);
@@ -100,7 +100,7 @@ const waitFor = (selector, container) => {
 const blury = ($l) => $l.trigger('input').trigger('keydown').trigger('keyup').trigger('change.rails').trigger('blur').trigger('change').trigger('content-updated');
 
 const autofill = async () => {
-    var buttons = await waitFor('#location')
+    await waitFor('#location')
         .then($location => {
             $location.trigger('click.rails');
             waitFor(`#location-single-choice-listbox > li:contains("${MY_LOC}")`)
@@ -114,32 +114,24 @@ const autofill = async () => {
                     .attr('value', (i, v) => (v && v !== '0h 0m') ? v : MY_TIME)
                     .val((i, v) => (v && v !== '0h 0m') ? v : MY_TIME)
                 );
-    
-            var notes = await waitFor('#notes').then($notes => { 
+
+            return await waitFor('#notes').then($notes => {
                     $notes.trigger('click')
                     $notes.text((i, v) => v || MY_NOTE)
-            
-                    textEvent.initTextEvent(
-                        'textInput',
-                        true,
-                        true,
-                        document.defaultView, 
-                        MY_NOTE
-                      );
-                    $notes.get(0).dispatchEvent(textEvent);
-
-                    blury($notes)
-                    
+                    $notes.val((i, v) => v || MY_NOTE)
                     return $notes;
-                });
+            });
 
-        
-            return jQuery('button[name="save"]');
-        });
 
-    buttons.prop('disabled', false).trigger('focus');
+        }).then($notes => {
+            // var $table = $notes.parents('TABLE')
+            // console.log($table)
+            // var addEntry = $table.next();
+            // console.log(addEntry)
+            // addEntry.click();
 
-    return buttons;
+        })
+
 }
 
 const MY_CHOICES = (() => {
@@ -152,7 +144,7 @@ const MY_CHOICES = (() => {
             input.trigger('click')
 
             waitFor('div.option', document.querySelector('div.selectize-dropdown-content'))
-                .then(options => { 
+                .then(options => {
                     options.each((i, opt) => {
                         PROJECTS.CHOICES[opt.getAttribute('data-value')] = opt.innerText;
                     });
@@ -176,7 +168,7 @@ const cfg = new MonkeyConfig({
                     var myProject = cfg.get('MY_PROJECT');
                     var defaultRow = jQuery(`[data-value="${myProject}"]`)?.parents('tr');
 
-                    for await (const day of fillerup(defaultRow)) { 
+                    for await (const day of fillerup(defaultRow)) {
                       console.log(day);
                     }
                 });
@@ -222,7 +214,7 @@ const MY_UPDATE_ALL = cfg.get('MY_UPDATE_ALL');
         'textInput',
         true,
         true,
-        null, 
+        null,
         " "
       );
 
@@ -233,12 +225,12 @@ const MY_UPDATE_ALL = cfg.get('MY_UPDATE_ALL');
 
     jQuery('body').on('mousedown', 'span.edit-box-link', (ev) => {
         try {
-        
+
             var prev = jQuery(ev.target).prev();
             if (prev?.hasClass('entry-box')) {
                 prev.val((i, v) => v ? v : MY_TIME );
             }
-    
+
             let { classList, innerText } = ev.target;
             if (OPEN.some(o => classList.contains(o))) {
                 autofill();
@@ -249,4 +241,3 @@ const MY_UPDATE_ALL = cfg.get('MY_UPDATE_ALL');
     })
 
 })();
-
