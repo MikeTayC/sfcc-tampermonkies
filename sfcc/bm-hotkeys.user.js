@@ -42,7 +42,7 @@ const SELECTORS = {
     DWEASE_SEARCH: "input.dw-search",
 };
 
-const IGNORE_TYPES = ["INPUT", "TEXTAREA", "SELECT"];
+const IGNORE_TYPES = ["INPUT", "TEXTAREA", "SELECT", "BM-LIGHTNING-INPUT", "LIGHTNING-OVERLAY-CONTAINER", "LIGHTNING-INPUT"];
 
 const log = (logged) => {
     if (ENABLE_CONSOLE) {
@@ -149,6 +149,12 @@ const hotKeyPress = (ev) => {
                         "/on/demandware.store/Sites-Site/default/ViewSystemObjectTypeList-Start"
                     );
                     break;
+                case "KeyE":
+                        redirect(
+                            ev,
+                            "/on/demandware.store/Sites-Site/default/ViewCustomObjectList_52-Dispatch"
+                        );
+                        break;
                 case "KeyQ":
                     var easy = document.querySelector(SELECTORS.DWEASE);
                     var easySearch = document.querySelector(

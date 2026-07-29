@@ -1,53 +1,29 @@
 const LIMIT = 6000
 
-const days = ['.day2','.day3','.day4','.day5', '.day6'].values()
+var days = {
+    Mon: '.day2',
+    Tue: '.day3',
+    Wed: '.day4',
+    Thu: '.day5',
+    Fri: '.day6',
+};
+
 // const days = ['.day2'].values()
 
-var textEvent = document.createEvent('TextEvent');
-    
-
-var keyboardEventDown = new KeyboardEvent(
-    'keydown',
-    {
-        key: " ",
-        keyCode: 32,
-        code: "Space", 
-        which: 32,
-        shiftKey: false,
-        ctrlKey: false,  
-        metaKey: false 
-    }
-)
-var keyboardEventUp = new KeyboardEvent(
-    'keyup',
-    {
-        key: " ",
-        keyCode: 32,
-        code: "Space", 
-        which: 32,
-        shiftKey: false,
-        ctrlKey: false,  
-        metaKey: false 
-    }
-)
-
-
 async function* fillerup (defaultRow) {
+
+    var DAYS = cfg.get('DAYS')?.values();
     while (true) {
-        var { done, value } = days.next();
+        var { done, value } = DAYS.next();
         if (done) { return };
+        var day = days[value];
+        let box = defaultRow.find(`${day} input.entry-box`).get(0);
 
-        let box = defaultRow.find(`${value} input.entry-box`);
-        box?.val((i, v) => v ? v : MY_TIME ).next().trigger('click');
-
-        await autofill().then($buttons => $buttons.trigger('click'))
-       
-        await waitForRemoval('#location')
-        yield value;
+        yield box?.ariaLabel?.split(' ')?.pop()
     }
 }
 
-  
+
 
 const OPEN = ['edit-pencil','edit-box-link'];
 const CLOSED = ['Leave', 'Update', 'Save'];
@@ -60,10 +36,10 @@ const waitForRemoval = (selector) => {
         }
     }, LIMIT);
 
-    return new Promise(resolve => {     
+    return new Promise(resolve => {
         inter = setInterval(() => {
             var $el = jQuery(selector);
-            
+
             if (!$el?.length) {
                 clearInterval(inter);
                 clearTimeout(timeout);
@@ -73,7 +49,7 @@ const waitForRemoval = (selector) => {
     });
 }
 
-const waitFor = (selector, container) => { 
+const waitFor = (selector, container) => {
     var inter;
     var timeout = setTimeout(() => {
         if (inter) {
@@ -81,12 +57,12 @@ const waitFor = (selector, container) => {
         }
     }, LIMIT);
 
-    return new Promise(resolve => {     
+    return new Promise(resolve => {
         inter = setInterval(() => {
-            var $el = container 
+            var $el = container
             ? jQuery(container).find(selector)
             : jQuery(selector);
-            
+
             if ($el?.length) {
                 clearInterval(inter);
                 clearTimeout(timeout);
@@ -97,15 +73,13 @@ const waitFor = (selector, container) => {
     });
 }
 
-const blury = ($l) => $l.trigger('input').trigger('keydown').trigger('keyup').trigger('change.rails').trigger('blur').trigger('change').trigger('content-updated');
 
 const autofill = async () => {
-    var buttons = await waitFor('#location')
+    await waitFor('#location')
         .then($location => {
             $location.trigger('click.rails');
             waitFor(`#location-single-choice-listbox > li:contains("${MY_LOC}")`)
-                .then($li => $li.trigger('click.rails'))
-                .then(blury);
+                .then($li => $li.trigger('click.rails'));
             return $location.change('change').trigger('blur');
         })
         .then(async () => {
@@ -114,79 +88,126 @@ const autofill = async () => {
                     .attr('value', (i, v) => (v && v !== '0h 0m') ? v : MY_TIME)
                     .val((i, v) => (v && v !== '0h 0m') ? v : MY_TIME)
                 );
-    
-            var notes = await waitFor('#notes').then($notes => { 
+
+            return await waitFor('#notes').then($notes => {
                     $notes.trigger('click')
                     $notes.text((i, v) => v || MY_NOTE)
-            
-                    textEvent.initTextEvent(
-                        'textInput',
-                        true,
-                        true,
-                        document.defaultView, 
-                        MY_NOTE
-                      );
-                    $notes.get(0).dispatchEvent(textEvent);
-
-                    blury($notes)
-                    
+                    $notes.val((i, v) => v || MY_NOTE)
                     return $notes;
-                });
-
-        
-            return jQuery('button[name="save"]');
-        });
-
-    buttons.prop('disabled', false).trigger('focus');
-
-    return buttons;
+            });
+        })
 }
 
-const MY_CHOICES = (() => {
-    var PROJECTS = {
-        CHOICES: {},
-        TASKS: {}
-    };
-    waitFor('input[type=select-one]')
-        .then((input) => {
-            input.trigger('click')
+var GM_CHOICES = GM_getValue('MY_CHOICES');
+const MY_CHOICES = {
+    PROJECTS: GM_CHOICES?.PROJECTS || {},
+    TASKS: GM_CHOICES?.TASKS || {},
+}
 
-            waitFor('div.option', document.querySelector('div.selectize-dropdown-content'))
-                .then(options => { 
-                    options.each((i, opt) => {
-                        PROJECTS.CHOICES[opt.getAttribute('data-value')] = opt.innerText;
-                    });
-                });
-        });
-    return PROJECTS;
-})()
 
 const cfg = new MonkeyConfig({
     title: "Timesheet Defaults",
     menuCommand: true,
     params: {
-        MY_UPDATE_ALL: {
-            label: 'Auto-update Week',
+        UPDATE_STORIES: {
+            label: 'Auto fill tasks',
             type: 'custom',
-            value: `<button id="update-full-week">Update All</button>`,
+            value: `<button id="update-full-week">Update</button>`,
             // html: '',
             set: (value, container) => {
+                var MY_USER = cfg.get('MY_USER') || document.defaultView.Mavenlink?.currentUser?.id;
                 jQuery(container).addClass('__MonkeyConfig_buttons').html(value).on('click', 'button', async (ev) => {
-                    cfg.close();
-                    var myProject = cfg.get('MY_PROJECT');
-                    var defaultRow = jQuery(`[data-value="${myProject}"]`)?.parents('tr');
+                    var MY_LOC = cfg.get('MY_LOC');
+                    var MY_TIME = cfg.get('MY_TIME');
+                    var MY_NOTE = cfg.get('MY_NOTE');
+                    var MY_PROJECT = cfg.get('MY_PROJECT');
+                    var MY_STORY = cfg.get('MY_STORY');
 
-                    for await (const day of fillerup(defaultRow)) { 
-                      console.log(day);
+                    var row = jQuery(`[data-value="${MY_PROJECT}"]`)?.parents('tr');
+
+                    for await (const day of fillerup(row)) {
+                        var res = await poster('https://blueacornici.mavenlink.com/timesheets/time_entries', {
+                            "user_id": MY_USER,
+                            "time_entry": {
+                                "billable": true,
+                                "location": MY_LOC,
+                                "notes": MY_NOTE,
+                                "story_id": MY_STORY,
+                                "workspace_id": MY_PROJECT,
+                                "line_item_date": day,
+                                "time": MY_TIME * 60
+                            }
+                        });
                     }
+                    location.reload();
                 });
             },
             get: () => {}
         },
+        RELOAD: {
+            label: 'Reload Projects/Tasks',
+            type: 'custom',
+            value: `<button id="update-full-week">Refresh</button>`,
+            // html: '',
+            set: (value, container) => {
+                var MY_USER = cfg.get('MY_USER') || document.defaultView.Mavenlink?.currentUser?.id;
+                var c = jQuery(container);
+                var p = c.parents('.__MonkeyConfig_container');
+                var projectSelector = p.find('#__MonkeyConfig_field_MY_PROJECT');
+                projectSelector.on('change', async (ev) => {
+                    var projectId = ev.target.value;
+                    if (projectId) {
+                        cfg.set('MY_PROJECT', projectId);
+                        cfg.set('MY_STORY');
+
+                        let { stories } = await rs(
+                            `https://blueacornici.mavenlink.com/timesheets/get_workspace_and_stories?id=${projectId}&user_id=${MY_USER}&include_story_ancestor_path=false`
+                        );
+
+                        p.find('#__MonkeyConfig_field_MY_STORY').html(
+                            stories.map(s => `<option value="${s.id}">${s.title}</option>`).join('')
+                        );
+                    }
+                });
+                c.addClass('__MonkeyConfig_buttons').html(value).on('click', 'button', async (ev) => {
+                    GM_setValue('MY_CHOICES');
+                    cfg.set('MY_PROJECT')
+                    cfg.set('MY_STORY')
+
+                    var { results, workspaces} = await rs(
+                        `https://blueacornici.mavenlink.com/api/v1/workspaces?viewing_time_as_user[user_id]=${MY_USER}&per_page=20&page=1`
+                    );
+                    projectSelector.html(
+                        '<option value=""></option>' +
+                        results?.map(r => `<option value="${r.id}">${workspaces[r.id].title}</option>`).join('')
+                    )
+
+                    await updateProjects();
+                });
+            },
+            get: () => {}
+        },
+        DAYS: {
+            label: 'Auto update Days',
+            type: 'select',
+            multiple: true,
+            variant: 'checkbox',
+            choices: ['Mon','Tue','Wed','Thu', 'Fri']
+        },
+        MY_USER: {
+            label: 'My User',
+            type: 'number',
+            default: 0,
+        },
         MY_PROJECT: {
             label: 'My Project',
             type: 'select',
-            choices: MY_CHOICES.CHOICES
+            choices: MY_CHOICES.PROJECTS
+        },
+        MY_STORY: {
+            label: 'My Story',
+            type: 'select',
+            choices: MY_CHOICES.TASKS
         },
         MY_LOC: {
             label: 'My Location',
@@ -201,9 +222,13 @@ const cfg = new MonkeyConfig({
         },
         MY_TIME: {
             label: 'My Time',
-            type: "text",
-            default: '8h 0m'
-        }
+            type: "number",
+            default: 8
+        },
+
+    },
+    onSave: (values) => {
+        GM_setValue('MY_CHOICES')
     }
 });
 
@@ -211,34 +236,75 @@ const cfg = new MonkeyConfig({
 const MY_LOC = cfg.get('MY_LOC');
 const MY_TIME = cfg.get('MY_TIME');
 const MY_NOTE = cfg.get('MY_NOTE');
-const MY_UPDATE_ALL = cfg.get('MY_UPDATE_ALL');
 
+var rs = async (url) => {
+    var res = await fetch(url, { method: "GET" });
+    return await res.json();
+}
 
-(function () {
+var poster = async (url, body) => {
+    var res = await fetch(url, {
+        method: "POST",
+        mode: "cors",
+        credentials: "same-origin",
+        headers: {
+            "Content-Type": "application/json;charset=utf-8",
+            "X-CSRF-Token": document.defaultView.authenticity_token
+        },
+        body: JSON.stringify(body)
+    });
+
+    return await res.json();
+}
+
+var updateProjects = async () => {
+    if (GM_CHOICES) return;
+
+    var MY_USER = cfg.get('MY_USER');
+    var { results, workspaces} = await rs(
+        `https://blueacornici.mavenlink.com/api/v1/workspaces?viewing_time_as_user[user_id]=${MY_USER}&per_page=20&page=1`
+    );
+
+    var MY_PROJECT = cfg.get('MY_PROJECT');
+    var workspaceStories = await Promise.all(
+        Array.from(results, async (workspace) => {
+            let data = workspaces[workspace.id];
+            let { stories } = await rs(
+                `https://blueacornici.mavenlink.com/timesheets/get_workspace_and_stories?id=${workspace.id}&user_id=${MY_USER}&include_story_ancestor_path=false`
+            );
+
+            MY_CHOICES.PROJECTS[workspace.id] = data.title;
+
+            if (MY_PROJECT === workspace.id) {
+                stories.forEach(s => {
+                    MY_CHOICES.TASKS[s.id] = s.title;
+                })
+            }
+            return Promise.resolve(true);
+    }));
+
+    GM_setValue('MY_CHOICES', MY_CHOICES)
+}
+
+(async function () {
     "use strict";
 
-    console.log(window);
-    textEvent.initTextEvent(
-        'textInput',
-        true,
-        true,
-        null, 
-        " "
-      );
+    if (!cfg.get('MY_USER')) {
+        cfg.set('MY_USER', document.defaultView.Mavenlink?.currentUser?.id || 0);
+    }
 
-    // jQuery(window).on('click.rails', (e) => console.log('click.rails', e.target))
+    await updateProjects();
 
     waitFor('button.fill-in-from-previous-week-link').then((btn => btn.trigger('click')));
 
-
     jQuery('body').on('mousedown', 'span.edit-box-link', (ev) => {
         try {
-        
+
             var prev = jQuery(ev.target).prev();
             if (prev?.hasClass('entry-box')) {
                 prev.val((i, v) => v ? v : MY_TIME );
             }
-    
+
             let { classList, innerText } = ev.target;
             if (OPEN.some(o => classList.contains(o))) {
                 autofill();
@@ -249,4 +315,3 @@ const MY_UPDATE_ALL = cfg.get('MY_UPDATE_ALL');
     })
 
 })();
-
